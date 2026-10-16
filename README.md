@@ -77,6 +77,8 @@
 4. 기본 허용 출처는 `https://seedcoop.github.io`와 로컬 개발 주소 `http://localhost`, `http://127.0.0.1`입니다. 로컬 포트도 허용합니다. 도메인이 바뀌면 서버의 `PORTAL_ALLOWED_ORIGINS`에 새 출처를 쉼표로 구분해 추가합니다. 출처는 경로를 제외한 `https://도메인` 형식입니다.
 5. `public/portal-config.js`의 프로젝트 URL·publishable key·함수명이 해당 서버와 일치하는지 확인한 뒤 GitHub Pages를 배포합니다.
 
+현재 서버는 Dashboard 편집기의 진입 파일에서 GitHub의 확정된 커밋에 있는 `supabase/functions/mentor-portal/index.ts`를 가져와 배포했습니다. 서버 코드를 수정할 때는 위 CLI 명령으로 다시 배포하거나, **Edge Functions → mentor-portal → Code**에서 가져오는 커밋 주소를 새 확정 커밋으로 바꾸고 **Deploy updates**를 누릅니다. `main`을 수정하면 웹페이지는 자동 배포되지만 서버 함수는 별도로 배포해야 합니다. 함수의 **Settings → Verify JWT with legacy secret**은 끈 상태로 유지합니다. 인증 검사는 함수 내부에서 수행하며 프로젝트의 legacy API key 자체를 비활성화하는 설정과는 다릅니다.
+
 ## 최초 관리자 계정 만들기
 
 이 작업은 Supabase 프로젝트 소유자가 한 번 수행합니다. 초기 관리자 비밀번호는 운영자가 직접 정하고 비밀번호 관리 도구에 보관합니다.

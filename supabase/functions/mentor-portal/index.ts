@@ -246,8 +246,10 @@ async function ipHash(request: Request) {
   const bytes = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(ip));
   return Array.from(new Uint8Array(bytes), b => b.toString(16).padStart(2, '0')).join('');
 }
-async function login(admin: any, auth: any, loginName: string, secret: string, ip: string) {
-  const start = await rpc(admin, 'login-start', null, null, { username: loginName, ipHash: ip });
+async function login(admin: any, auth: any, loginName: string, secret: string, ip: string, reservation?: Obj) {
+  // A successful current-password proof already reserves one attempt. Reuse that
+  // reservation only inside the password workflow; never accept it from a client.
+  const start = reservation ?? await rpc(admin, 'login-start', null, null, { username: loginName, ipHash: ip });
   if (start.limited) fail(429, 'RATE_LIMITED', '로그인 시도가 많습니다. 15분 뒤 다시 시도해 주세요.');
   const { data, error } = await auth.auth.signInWithPassword({ email: start.email || 'missing-' + crypto.randomUUID() + '@uridongne.invalid', password: secret });
   if (error || !data?.session || !start.account || data.user?.id !== start.account.id) fail(401, 'INVALID_CREDENTIALS', '사용자명 또는 비밀번호를 확인해 주세요.');
@@ -321,7 +323,12 @@ export async function handleRequest(request: Request): Promise<Response> {
         await rpc(admin, 'credentials-finish', actor.id, null, { operation: operation.operation, mustChangePassword: false });
       } catch (error) { await rpc(admin, 'credentials-abort', actor.id, null, { operation: operation.operation }).catch(() => {}); throw error; }
       await admin.auth.admin.signOut(token, 'global').catch(() => {});
-      return json(await login(admin, auth, me.user.username, next, ip));
+      // credentials-begin increments exactly once. login-finish still compares
+      // this expected version with the current DB version and Auth session, so a
+      // concurrent account change cannot authorize a stale session.
+      return json(await login(admin, auth, me.user.username, next, ip, {
+        account: reserved.account, email: ident.email, authVersion: reserved.authVersion + 1,
+      }));
     }
     if (['records', 'admin-records', 'export'].includes(action)) validateFilters(input);
     if (action === 'record') input.id = id(input.id);
