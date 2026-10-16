@@ -3,7 +3,7 @@ const fs=require('node:fs'),path=require('node:path'),assert=require('node:asser
 const root=path.resolve(__dirname,'..'),publicDir=path.join(root,'public');
 const walk=dir=>fs.readdirSync(dir,{withFileTypes:true}).flatMap(item=>{const full=path.join(dir,item.name);assert(!item.isSymbolicLink(),'Public directory must not contain symbolic links');return item.isDirectory()?walk(full):[full];});
 const files=walk(publicDir),problems=[],references=new Set();
-for(const name of ['index.html','.nojekyll','portal-config.js','portal-client.js','portal.js','portal.css','portal-fields.json','student.html','student.js','student.css','student-admin.js','app.js','studio.js','moodboard.js','assets/studio-pdf.js','assets/studio-pdf-LICENSES.txt','starter/index.html','worksheets/game-moodboard-template.pdf','worksheets/game-moodboard-template.pptx'])if(!fs.existsSync(path.join(publicDir,name)))problems.push('Missing public file: '+name);
+for(const name of ['index.html','.nojekyll','portal-config.js','portal-client.js','portal.js','portal.css','portal-fields.json','student.html','student.js','student.css','student-admin.js','app.js','prompt-safety.js','studio.js','moodboard.js','assets/studio-pdf.js','assets/studio-pdf-LICENSES.txt','starter/index.html','worksheets/game-moodboard-template.pdf','worksheets/game-moodboard-template.pptx'])if(!fs.existsSync(path.join(publicDir,name)))problems.push('Missing public file: '+name);
 function inspectReference(source,reference){
  if(!reference||reference.includes('${')||/^(?:#|https?:|data:|blob:|mailto:|tel:|javascript:)/i.test(reference))return;
  const clean=reference.split(/[?#]/,1)[0];if(!clean)return;

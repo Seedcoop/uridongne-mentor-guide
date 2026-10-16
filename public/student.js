@@ -69,10 +69,10 @@
     } finally { clearTimeout(timeout); }
   }
   function script(source) {
-    return new Promise((resolve, reject) => { const node = document.createElement('script'); node.src = source + '?v=20261016-week2-title1'; node.onload = resolve; node.onerror = () => { node.remove(); reject(Error('웹 도구를 불러오지 못했어요. 인터넷 연결을 확인하고 다시 입장해 주세요.')); }; document.head.append(node); });
+    return new Promise((resolve, reject) => { const node = document.createElement('script'); node.src = source + '?v=20261016-safety1'; node.onload = resolve; node.onerror = () => { node.remove(); reject(Error('웹 도구를 불러오지 못했어요. 인터넷 연결을 확인하고 다시 입장해 주세요.')); }; document.head.append(node); });
   }
   async function loadTools() {
-    if (!scriptsPromise) scriptsPromise = (async () => { if (!window.WorkshopPDF) await script('./assets/studio-pdf.js'); if (!window.WorkshopTools) await script('./studio.js'); if (!window.VisualMoodboard) await script('./moodboard.js'); })().catch(error => { scriptsPromise = null; throw error; });
+    if (!scriptsPromise) scriptsPromise = (async () => { if (!globalThis.WorkshopPromptSafety) await script('./prompt-safety.js'); if (!window.WorkshopPDF) await script('./assets/studio-pdf.js'); if (!window.WorkshopTools) await script('./studio.js'); if (!window.VisualMoodboard) await script('./moodboard.js'); })().catch(error => { scriptsPromise = null; throw error; });
     await scriptsPromise;
   }
   function lockTool() {

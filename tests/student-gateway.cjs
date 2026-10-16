@@ -221,6 +221,7 @@ async function frontendChecks() {
   equals('anonymous gate loads no tools or network', [loadedScripts.length, network.length], [0, 0]);
   check('anonymous audience cannot use any week', [1, 2, 3, 4, 5, 6].every(week => !window.WorkshopAudience.canUseWeek(week)));
   // Load the actual tool modules into the synthetic DOM after the gate check.
+  vm.runInContext(read('public/prompt-safety.js'), sandbox);
   vm.runInContext(read('public/studio.js'), sandbox);
   vm.runInContext(read('public/moodboard.js'), sandbox);
   const api = window.WorkshopTools;
@@ -331,6 +332,7 @@ async function weeklyLinkChecks() {
     const location = { search, hash: '#studio/6', pathname: '/uridongne-mentor-guide/student.html', get href() { return origin + this.pathname + this.search + this.hash; } };
     const window = { addEventListener() {}, WorkshopPDF: {}, WorkshopTools: { clearStudentState() {}, render: week => 'CURRENT-WEEK-' + week }, VisualMoodboard: { clearStudentState() {} } };
     const sandbox = vm.createContext({ window, document: { getElementById: node, addEventListener() {}, createElement: () => ({}), head: { append: element => loads.push(element.src) } }, location, history: { replaceState() {} }, URL, URLSearchParams, crypto: webcrypto, sessionStorage: sessionStore, AbortController, setTimeout: () => 1, clearTimeout() {}, fetch: async (...args) => { requests.push(args); throw Error('No gateway verification should run on link open'); } });
+    vm.runInContext(read('public/prompt-safety.js'), sandbox);
     vm.runInContext(source, sandbox);
     await Promise.resolve(); await Promise.resolve();
     return { window, nodes, sessionStore, loads, requests };

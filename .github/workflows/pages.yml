@@ -7,6 +7,7 @@ on:
       - public/**
       - tests/static-check.cjs
       - tests/student-gateway.cjs
+      - tests/prompt-safety.cjs
       - supabase/functions/student-portal/**
       - supabase/migrations/202610160002_students.sql
       - .github/workflows/pages.yml
@@ -41,6 +42,8 @@ jobs:
           package-manager-cache: false
       - name: Check student gateway
         run: node tests/student-gateway.cjs
+      - name: Check prompt safety
+        run: node tests/prompt-safety.cjs
       - name: Configure Pages
         uses: actions/configure-pages@v6
       - name: Upload public site
