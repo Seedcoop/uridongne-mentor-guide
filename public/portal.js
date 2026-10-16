@@ -65,7 +65,7 @@ function recordEditor() {
  '<p class="mp-note">'+(r.id?'서버에 최근 저장: '+esc(dateText(r.updatedAt)):'아직 서버에 저장하지 않은 기록입니다.')+'</p></form></section>';
 }
 function recordsView() {
- return heading('내 활동 기록','임시저장한 기록을 이어 쓰고, 제출 상태와 피드백을 확인해요.')+
+ return heading('내 활동 기록')+
  '<div class="mp-toolbar"><label>새로 작성할 회차<select data-mp-week>'+weekOptions(S.week,false)+'</select></label><div class="mp-actions">'+button('활동계획 작성','new','data-kind="plan"')+button('교육일지 작성','new','data-kind="log" class="mp-button mp-secondary"')+'</div></div>'+
  recordEditor()+'<section class="mp-panel"><div class="mp-section-title"><h3>저장·제출한 기록</h3>'+button('새로고침','reload','class="mp-button mp-secondary mp-small"')+'</div>'+recordList(S.records,false)+'</section>';
 }
