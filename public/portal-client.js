@@ -48,7 +48,7 @@
   } catch (_) { clearSession(); }
 
   function assertReady() {
-    if (!configured) throw portalError('멘토 기록 연결을 준비하고 있습니다. 교육 가이드와 주차별 도구는 계속 사용할 수 있어요.', 503, 'CONNECTION_NOT_READY');
+    if (!configured) throw portalError('로그인 연결을 준비하고 있습니다. 주차별 세부내용과 도구는 로그인 연결 후 이용할 수 있어요.', 503, 'CONNECTION_NOT_READY');
   }
   function assertLifetime() {
     if (session && Date.now() - session.started_at >= maxSessionMs) {
@@ -150,6 +150,7 @@
   window.MentorPortalClient = Object.freeze({
     request,
     isConfigured: () => configured,
+    hasSession: () => { try { assertLifetime(); return Boolean(session); } catch (_) { return false; } },
     clearSession
   });
 })();

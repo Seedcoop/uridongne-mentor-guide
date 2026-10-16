@@ -1,7 +1,7 @@
 (function () {
 'use strict';
 const CLIENT=window.MentorPortalClient, STATUS={draft:'임시저장',submitted:'제출됨',revision_requested:'보완 요청',reviewed:'확인 완료'};
-const S={user:null,me:null,schema:null,epoch:0,controller:null,root:null,view:'home',week:1,records:[],accounts:[],active:null,adminDetail:null,adminTab:'records',filters:{week:'',type:'',status:''},accountEdit:null,dirty:false,busy:false,error:'',notice:'',loading:false,pending:null,suspended:null};
+const S={user:null,me:null,schema:null,epoch:0,controller:null,root:null,view:'home',week:1,records:[],accounts:[],active:null,adminDetail:null,adminTab:'records',filters:{week:'',type:'',status:''},accountEdit:null,dirty:false,busy:false,error:'',notice:'',loading:false,pending:null,suspended:null,returnTo:null,guideAccess:false};
 let modal=null,modalBusy=false,modalSequence=0,schemaPromise=null,listSequence=0,detailSequence=0,accountsLoading=false;
 const esc=v=>String(v==null?'':v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const selected=(a,b)=>String(a)===String(b)?' selected':'';
@@ -15,8 +15,9 @@ async function api(action,options) {
  try{return await CLIENT.request(action,options);}
  catch(e){if(e.status===401&&action!=='login')expireSession();throw e;}
 }
-function connectionNotice(){return '<section class="mp-panel"><h3>멘토 기록 연결 준비 중</h3><p>활동계획과 교육일지 연결을 준비하고 있습니다. 교육 가이드와 주차별 도구는 계속 사용할 수 있어요.</p><p class="mp-note">계정·비밀번호 문의는 운영자에게 해주세요.</p></section>';}
-function expireSession(){if(S.dirty&&S.active&&S.user)S.suspended={userId:S.user.id,record:structuredClone(S.active)};++S.epoch;S.controller?.abort();S.user=null;S.me={user:null};S.records=[];S.accounts=[];S.active=null;S.adminDetail=null;S.accountEdit=null;S.dirty=false;S.loading=false;S.error='로그인이 만료되었습니다. 다시 로그인해 주세요. 저장하지 않은 입력은 같은 계정으로 로그인하면 이어 쓸 수 있습니다.';S.notice='';closeModal(true);render();authSlot();}
+function connectionNotice(){return '<section class="mp-panel"><h3>멘토 계정 연결 준비 중</h3><p>로그인 연결을 준비하고 있습니다. 주차별 세부내용과 도구는 로그인 연결이 완료된 뒤 이용할 수 있어요.</p><p class="mp-note">계정·비밀번호 문의는 운영자에게 해주세요.</p></section>';}
+function authChanged(){window.dispatchEvent(new Event('mentor-portal-auth-change'));}
+function expireSession(){const hadAccess=Boolean(S.user||S.guideAccess);if(S.dirty&&S.active&&S.user)S.suspended={userId:S.user.id,record:structuredClone(S.active)};++S.epoch;S.controller?.abort();S.user=null;S.guideAccess=false;S.me={user:null};S.records=[];S.accounts=[];S.active=null;S.adminDetail=null;S.accountEdit=null;S.dirty=false;S.loading=false;S.error='로그인이 만료되었습니다. 다시 로그인해 주세요. 저장하지 않은 입력은 같은 계정으로 로그인하면 이어 쓸 수 있습니다.';S.notice='';closeModal(true);render();authSlot();if(hadAccess)authChanged();}
 function alive(epoch){return epoch===S.epoch&&S.root?.isConnected;}
 function authSlot() {
  let slot=document.getElementById('portalAuth');
@@ -31,7 +32,7 @@ function links() {return '<nav class="mp-nav" aria-label="멘토 포털">'+
  '<a href="#records"'+(S.view==='records'?' aria-current="page"':'')+'>내 기록</a>'+
  (S.user?.role==='admin'?'<a href="#admin"'+(S.view==='admin'?' aria-current="page"':'')+'>관리자</a>':'')+
  '<a href="#account"'+(S.view==='account'?' aria-current="page"':'')+'>내 계정</a></nav>';}
-function gate() {if(!CLIENT?.isConfigured())return connectionNotice();return '<section class="mp-panel mp-gate"><h3>멘토 계정으로 로그인해 주세요</h3><p>활동계획과 교육일지는 로그인한 멘토의 계정에 저장됩니다. 교육 가이드는 로그인 없이 볼 수 있어요.</p>'+button('멘토 로그인','login')+'</section>';}
+function gate() {if(!CLIENT?.isConfigured())return connectionNotice();return '<section class="mp-panel mp-gate"><h3>멘토 계정으로 로그인해 주세요</h3><p>주차별 세부내용과 제작 도구는 로그인 후 확인할 수 있어요. 활동계획과 교육일지는 로그인한 멘토의 계정에 저장됩니다.</p>'+button('멘토 로그인','login')+'<p><a class="mp-link" href="#home">처음으로 돌아가기 →</a></p></section>';}
 function weekOptions(current,all) {return (all?'<option value="">모든 회차</option>':'')+(S.schema?.weeks||Array.from({length:6},(_,i)=>(i+1)+'회차')).map((x,i)=>'<option value="'+(i+1)+'"'+selected(current,i+1)+'>'+esc(x)+'</option>').join('');}
 function homeView() {
  return heading('활동계획과 교육일지','활동 전에는 계획을 준비하고, 활동 뒤에는 실제로 진행한 내용을 남겨요.')+
@@ -108,6 +109,7 @@ function render() {
  else if(S.user?.mustChangePassword)content=passwordForm(true)+'<div class="mp-actions">'+button('로그아웃','logout','class="mp-button mp-secondary"')+'</div>';
  else if(S.view==='home')content=homeView();
  else if(!S.user)content=gate();
+ else if(S.view==='guide')content='<div class="mp-loading" role="status">주차별 내용을 여는 중입니다…</div>';
  else if(S.view==='admin')content=adminView();
  else content=recordsView();
  S.root.innerHTML=(S.user&&!S.loading?links():'')+'<div class="mp-messages">'+banner()+'</div>'+content;
@@ -131,6 +133,33 @@ async function mount() {
  try{const [schema,me]=await Promise.all([schemaPromise,api('me',{signal:S.controller.signal})]);if(!alive(epoch))return;S.schema=schema;const prior=S.user?.id,priorRole=S.user?.role;if(prior&&!me.user){expireSession();S.me=me;render();return;}S.user=me.user||null;S.me=me;if(prior&&(prior!==S.user?.id||priorRole!==S.user?.role)){S.active=null;S.adminDetail=null;S.records=[];S.accounts=[];S.dirty=false;}S.loading=false;render();if(S.pending&&S.user&&!S.user.mustChangePassword&&S.view==='records'){const p=S.pending;S.pending=null;newRecord(p.kind,p.week); }await loadList(epoch);}
  catch(e){if(e.name==='AbortError'||!alive(epoch))return;S.loading=false;S.error=errorMessage(e);S.me=null;render();}
 }
+// Do not render protected routes until the server has checked the session and
+// active account. Keeping the requested hash also makes deep links resumable.
+async function requireAccess(hash) {
+ const root=document.getElementById('mentorPortal');
+ S.returnTo=hash;S.guideAccess=false;
+ await mount();
+ if(!root?.isConnected||S.root!==root||S.view!=='guide')return false;
+ const allowed=Boolean(S.me&&S.user&&!S.user.mustChangePassword&&!S.error&&!S.loading);
+ S.guideAccess=allowed;
+ if(allowed&&S.returnTo===hash)S.returnTo=null;
+ return allowed;
+}
+function hasAuthenticatedSession(){return Boolean(S.me?.user&&S.user&&S.me.user.id===S.user.id&&!S.user.mustChangePassword&&CLIENT?.hasSession());}
+function hasGuideAccess(){return S.guideAccess&&hasAuthenticatedSession();}
+function leaveGuide(keepReturn){S.guideAccess=false;if(!keepReturn)S.returnTo=null;}
+let accessCheck=null;
+async function revalidateAccess(){
+ if(!S.guideAccess)return;
+ if(accessCheck)return accessCheck;
+ const epoch=S.epoch;
+ accessCheck=(async()=>{
+  try{const me=await api('me');if(epoch!==S.epoch)return;if(!me.user){expireSession();return;}S.user=me.user;S.me=me;authSlot();if(me.user.mustChangePassword){S.guideAccess=false;authChanged();}}
+  catch(e){if(epoch===S.epoch){S.guideAccess=false;authChanged();}}
+ })();
+ try{await accessCheck;}finally{accessCheck=null;}
+}
+function resumeGuide(){const hash=S.returnTo;if(!hash)return false;S.returnTo=null;if(location.hash===hash)authChanged();else navigate(hash);return true;}
 function navigate(hash){if(location.hash===hash)mount();else location.hash=hash;}
 function confirmLeave(){return !S.dirty||window.confirm('서버에 저장하지 않은 입력이 있습니다. 다른 기록을 열까요?');}
 function newRecord(kind,week) {
@@ -185,8 +214,8 @@ function openLogin() {
 async function accountRequest(form,action,body) {
  if(form.dataset.busy==='true')return;const epoch=S.epoch;formClear(form);busy(form,true);const inModal=Boolean(form.closest('.mp-modal'));if(inModal)modalBusy=true;
  try{const result=await api(action,{body});
- if(action==='login'){S.user=result.user||null;if(!S.user){const me=await api('me');S.user=me.user;S.me=me;}S.records=[];S.accounts=[];S.adminDetail=null;S.active=null;S.dirty=false;const restored=S.suspended&&String(S.suspended.userId)===String(S.user?.id);if(restored){S.active=S.suspended.record;S.dirty=true;}S.suspended=null;closeModal(true);authSlot();if(S.user?.mustChangePassword)navigate('#account');else if(S.pending||restored)navigate('#records');else {S.notice='로그인했습니다.';mount();}}
- else if(action==='password'){const me=await api('me');S.user=me.user;S.me=me;closeModal(true);if(S.pending)navigate('#records');else{render();setMessage('비밀번호를 변경했습니다.',false);}}
+ if(action==='login'){S.user=result.user||null;if(!S.user){const me=await api('me');S.user=me.user;S.me=me;}S.records=[];S.accounts=[];S.adminDetail=null;S.active=null;S.dirty=false;const restored=S.suspended&&String(S.suspended.userId)===String(S.user?.id);if(restored){S.active=S.suspended.record;S.dirty=true;}S.suspended=null;closeModal(true);authSlot();if(S.user?.mustChangePassword)navigate('#account');else if(S.pending||restored)navigate('#records');else if(!resumeGuide()){S.notice='로그인했습니다.';mount();}}
+ else if(action==='password'){const me=await api('me');S.user=me.user;S.me=me;closeModal(true);if(S.pending)navigate('#records');else if(!resumeGuide()){render();setMessage('비밀번호를 변경했습니다.',false);}}
  else if(alive(epoch)){if(action==='account-update'&&result.user){S.user=result.user;S.me={...S.me,user:result.user};authSlot();}S.accountEdit=null;const loaded=await loadList(epoch);if(alive(epoch)&&loaded!==false)setMessage(action==='account-create'?'계정을 만들었습니다.':action==='account-reset'?'임시 비밀번호를 재설정했습니다. 다음 로그인에서 변경해야 합니다.':'계정 정보를 저장했습니다.',false);closeModal(true);}
  }catch(e){if(form.isConnected)formError(form,errorMessage(e));}
  finally{if(form.isConnected)busy(form,false);modalBusy=false;}
@@ -194,7 +223,7 @@ async function accountRequest(form,action,body) {
 async function logout() {
  if(S.busy)return;if(S.dirty&&!window.confirm('저장하지 않은 입력을 닫고 로그아웃할까요?'))return;S.busy=true;
  let failed=false;
- try{await api('logout',{body:{}});}catch(e){failed=true;}finally{CLIENT.clearSession();++S.epoch;S.controller?.abort();S.user=null;S.me={user:null};S.active=null;S.adminDetail=null;S.accountEdit=null;S.records=[];S.accounts=[];S.dirty=false;S.pending=null;S.suspended=null;closeModal(true);S.notice=failed?'이 창에서 로그아웃했습니다.':'로그아웃했습니다.';S.error='';S.busy=false;render();authSlot();}
+ try{await api('logout',{body:{}});}catch(e){failed=true;}finally{CLIENT.clearSession();++S.epoch;S.controller?.abort();S.user=null;S.guideAccess=false;S.returnTo=null;S.me={user:null};S.active=null;S.adminDetail=null;S.accountEdit=null;S.records=[];S.accounts=[];S.dirty=false;S.pending=null;S.suspended=null;closeModal(true);S.notice=failed?'이 창에서 로그아웃했습니다.':'로그아웃했습니다.';S.error='';S.busy=false;render();authSlot();authChanged();}
 }
 async function reviewRecord(buttonEl) {
  const r=S.adminDetail,form=buttonEl.closest('form');if(!r||form.dataset.busy==='true')return;const feedback=form.elements.feedback.value,statusValue=buttonEl.dataset.status;
@@ -224,7 +253,7 @@ document.addEventListener('submit',e=>{
 });
 document.addEventListener('click',e=>{
  const b=e.target.closest('[data-mp-action]');if(!b||b.disabled)return;const action=b.dataset.mpAction;
- if(action==='login')openLogin();if(action==='modal-close')closeModal();if(action==='account')navigate('#account');if(action==='logout')logout();if(action==='retry')mount();
+ if(action==='login')openLogin();if(action==='modal-close')closeModal();if(action==='account')navigate('#account');if(action==='logout')logout();if(action==='retry'){if(S.view==='guide')authChanged();else mount();}
  if(action==='new')newRecord(b.dataset.kind,S.week);if(action==='open')openRecord(b.dataset.id,false);if(action==='admin-open')openRecord(b.dataset.id,true);
  if(action==='close-record'){if(confirmLeave()){S.active=null;S.dirty=false;render();}}
  if(action==='seed')seedPlan();if(action==='latest'&&S.active?.id&&confirmLeave())openRecord(S.active.id,false);
@@ -236,6 +265,6 @@ document.addEventListener('click',e=>{
  if(action==='account-reset'&&S.accountEdit)modalFrame('임시 비밀번호 재설정','<form data-mp-form="account-reset" novalidate><p>'+esc(S.accountEdit.name||S.accountEdit.username)+' 계정의 비밀번호를 재설정합니다. 다음 로그인에서 본인 비밀번호로 변경해야 합니다.</p><div class="mp-form-message" role="alert"></div><div class="mp-field"><label for="mpResetPassword">새 임시 비밀번호</label><input id="mpResetPassword" type="password" name="password" autocomplete="new-password" minlength="8" maxlength="128" required><p class="mp-help">8~128자로 입력해 주세요.</p></div><button type="submit" class="mp-button">임시 비밀번호 재설정</button></form>');
 });
 window.addEventListener('beforeunload',e=>{if(S.dirty){e.preventDefault();e.returnValue='';}});
-window.MentorPortal={mount,openLogin};
+window.MentorPortal={mount,openLogin,requireAccess,hasGuideAccess,hasAuthenticatedSession,revalidateAccess,leaveGuide};
 })();
 
