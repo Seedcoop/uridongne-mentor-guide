@@ -1,0 +1,6 @@
+project_id = "uridongne-mentor-guide"
+
+[functions.mentor-portal]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/mentor-portal/index.ts"
