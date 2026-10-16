@@ -1,0 +1,26 @@
+# Local credentials, sessions and exported mentor records
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+*-state.json
+*-session.json
+*credentials*.json
+mentor-records*.csv
+.sites-runtime/
+.supabase/
+supabase/.temp/
+supabase/.branches/
+
+# Local tools and verification results
+node_modules/
+test-results/
+playwright-report/
+tests/results/
+*.log
+.DS_Store
+Thumbs.db
+desktop.ini

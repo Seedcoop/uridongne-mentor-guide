@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>동네 물건 모으기 · 추가 실습용 스타터</title>
+  <style>
+    :root{color-scheme:light;--ink:#17332d;--mint:#00d6b4;--paper:#faf9f2;--yellow:#ffdc52}
+    *{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:"Malgun Gothic",Arial,sans-serif}
+    button{font:inherit;cursor:pointer;border:2px solid var(--ink);border-radius:12px;background:white;color:var(--ink);font-weight:700;min-height:48px;padding:10px 18px}
+    button:hover{background:#dcfff4}button:focus-visible,canvas:focus-visible{outline:4px solid #286df0;outline-offset:4px}
+    .page{width:min(900px,calc(100% - 32px));margin:24px auto}.eyebrow{font-size:12px;letter-spacing:.06em;font-weight:800}
+    h1{font-size:clamp(24px,4.6vw,38px);letter-spacing:-.06em;margin:10px 0}.intro{font-size:14px;line-height:1.7;margin:0 0 18px;max-width:780px}
+    .status{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:12px 16px;background:var(--ink);color:white;border-radius:16px 16px 0 0}
+    .status strong{color:var(--yellow)}.status span{font-size:14px}.arena{position:relative;border:3px solid var(--ink);border-top:0;background:#e4f6dc;overflow:hidden;aspect-ratio:16/9}
+    canvas{display:block;width:100%;height:100%;touch-action:none}.screen{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;padding:20px;background:rgba(250,249,242,.96)}
+    [hidden]{display:none!important}.screen h2{margin:8px 0 10px;font-size:clamp(24px,4vw,38px);letter-spacing:-.06em}.screen p{font-size:clamp(13px,2.1vw,16px);line-height:1.7;margin:0 0 18px}.screen .primary{background:var(--mint);min-width:170px}
+    .screen .primary:hover{background:#5ee7c9}.screen .tag{font-size:12px;font-weight:800;border:1px solid currentColor;border-radius:99px;padding:5px 10px}.actions{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+    .below{display:flex;justify-content:space-between;align-items:center;gap:20px;background:white;padding:16px;border:3px solid var(--ink);border-top:0;border-radius:0 0 16px 16px}.guide{font-size:14px;line-height:1.8}.guide strong{display:block;font-size:16px}
+    .pad{display:grid;grid-template-columns:repeat(3,52px);grid-template-rows:repeat(2,48px);gap:5px;flex-shrink:0}.pad button{padding:0;touch-action:none;user-select:none;-webkit-user-select:none;font-size:22px;border-radius:10px}.pad button:active,.pad button.pressed{background:var(--mint)}
+    .pad button[data-direction="up"]{grid-column:2}.pad button[data-direction="left"]{grid-column:1;grid-row:2}.pad button[data-direction="down"]{grid-column:2;grid-row:2}.pad button[data-direction="right"]{grid-column:3;grid-row:2}
+    .note{font-size:12px;line-height:1.7;margin:12px 2px;color:#496259}.playing-note{font-size:13px;margin:0 0 10px}.result-mark{font-size:32px;font-weight:bold;color:#09856a}
+    @media(max-width:560px){.page{margin:16px auto;width:calc(100% - 20px)}.intro{font-size:12px}.below{align-items:flex-start;padding:12px;gap:8px}.guide{font-size:12px}.guide strong{font-size:14px}.pad{grid-template-columns:repeat(3,44px);grid-template-rows:repeat(2,44px)}.pad button{min-height:44px}.screen{padding:12px}.screen p{margin-bottom:12px}.screen .tag{display:none}.screen h2{margin:0 0 7px}.screen button{min-height:44px;padding:8px 14px}.status{padding:10px}.status span{font-size:12px}}
+  </style>
+</head>
+<body>
+  <main class="page">
+    <div class="eyebrow">우리동네 플레이어 · 추가 실습용 스타터</div>
+    <h1>한 가지 행동부터, 우리 게임으로.</h1>
+    <p class="intro">청년 멘토 오리엔테이션 30분 실습을 위한 기본 예제입니다. 본활동 3회기에는 청소년이 고른 <strong>소재·목표·규칙</strong>으로 바꾸어 사용하세요. 8개 미션의 HTML 기획 도구와는 별도의 실행용 게임입니다.</p>
+    <div class="status"><span id="statusText" aria-live="polite">시작할 준비가 되었어요.</span><strong>모은 물건 <span id="itemCount">0 / 3</span></strong></div>
+    <div class="arena" id="arena" data-state="intro">
+      <canvas id="gameCanvas" width="800" height="450" tabindex="0" aria-label="방향키 또는 화면 버튼으로 주인공을 움직여 노란 물건을 모으는 게임">이 브라우저는 캔버스를 지원하지 않습니다.</canvas>
+      <section class="screen" id="startScreen" aria-labelledby="startTitle">
+        <span class="tag">시작 → 행동 → 완료 → 다시 하기</span>
+        <h2 id="startTitle">동네 물건 3개 모으기</h2>
+        <p>초록 친구를 움직여 <strong>노란 물건 3개</strong>를 모아 보세요.<br>방향키 또는 아래 화면 버튼을 눌러 움직여요.</p>
+        <button class="primary" id="startButton">게임 시작</button>
+      </section>
+      <section class="screen" id="resultScreen" aria-labelledby="resultTitle" hidden>
+        <div class="result-mark" aria-hidden="true">✓</div>
+        <h2 id="resultTitle">모두 모았어요!</h2>
+        <p id="resultText">동네 물건 3개를 찾았어요.</p>
+        <div class="actions"><button class="primary" id="retryButton">다시 하기</button><button id="homeButton">처음 화면</button></div>
+      </section>
+    </div>
+    <div class="below">
+      <div class="guide"><strong>움직이면 → 물건이 사라지고 → 모은 수가 올라가요.</strong>세 개를 모으면 끝! 시간 제한과 실패는 없어요.<br>규칙을 바꾼 뒤에는 직접 해보고, 다시 하기도 확인해요.</div>
+      <div class="pad" id="directionPad" role="group" aria-label="화면 방향 버튼">
+        <button type="button" data-direction="up" aria-label="위로 이동">↑</button>
+        <button type="button" data-direction="left" aria-label="왼쪽으로 이동">←</button>
+        <button type="button" data-direction="down" aria-label="아래로 이동">↓</button>
+        <button type="button" data-direction="right" aria-label="오른쪽으로 이동">→</button>
+      </div>
+    </div>
+    <p class="note">실습: 오늘 바꿀 것 1개와 그대로 둘 것 1개를 정해 Codex에 요청하세요. 이 파일은 외부 그림·음원·라이브러리 없이 실행되며, 같은 폴더에 사본을 저장해 두고 수정하면 됩니다.</p>
+  </main>
+  <script>
+    'use strict';
+    // ── 멘토 실습 수정 지점 ──
+    // ① 속도 한 개를 바꿔 비교: 190 → 140 또는 240.
+    // ② 청소년이 고른 소재로 물건 이름·색·시작 안내를 바꾸기.
+    // ③ 목표 개수는 아래 ITEM_POSITIONS의 개수와 함께 바꾸기.
+    // 핵심 규칙: 물건에 닿으면 한 번만 얻고, 모두 모으면 완료.
+    const PLAYER_SPEED = 190;
+    const ITEM_NAME = '동네 물건';
+    const ITEM_COLOR = '#ffdc52';
+    const ITEM_POSITIONS = [{ x: 230, y: 120 }, { x: 450, y: 310 }, { x: 650, y: 160 }];
+    const START_POSITION = { x: 90, y: 240 };
+    const PLAYER_RADIUS = 18;
+    const ITEM_RADIUS = 15;
+
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const arena = document.getElementById('arena');
+    const startScreen = document.getElementById('startScreen');
+    const resultScreen = document.getElementById('resultScreen');
+    const countText = document.getElementById('itemCount');
+    const statusText = document.getElementById('statusText');
+    const directionPad = document.getElementById('directionPad');
+    const directions = { ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right' };
+    const heldKeys = new Set();
+    const heldPointers = new Map();
+    let gameState = 'intro';
+    let player = { ...START_POSITION };
+    let items = [];
+    let collected = 0;
+    let previousTime = null;
+
+    function clearInputs() {
+      heldKeys.clear();
+      heldPointers.clear();
+      directionPad.querySelectorAll('button').forEach(button => button.classList.remove('pressed'));
+    }
+    function setState(next) {
+      clearInputs();
+      gameState = next;
+      arena.dataset.state = next;
+      startScreen.hidden = next !== 'intro';
+      resultScreen.hidden = next !== 'result';
+      statusText.textContent = next === 'playing' ? '노란 물건을 찾아 움직여요.' : next === 'result' ? '한 판을 끝냈어요!' : '시작할 준비가 되었어요.';
+    }
+    function resetGame() {
+      player = { ...START_POSITION };
+      items = ITEM_POSITIONS.map(position => ({ ...position, collected: false }));
+      collected = 0;
+      countText.textContent = `0 / ${items.length}`;
+      previousTime = null;
+    }
+    function startGame() {
+      resetGame();
+      setState('playing');
+      canvas.focus({ preventScroll: true });
+    }
+    function endGame() {
+      setState('result');
+      document.getElementById('resultText').textContent = `${ITEM_NAME} ${items.length}개를 찾았어요.`;
+      document.getElementById('retryButton').focus({ preventScroll: true });
+    }
+    function inputActive(direction) {
+      return heldKeys.has(direction) || [...heldPointers.values()].includes(direction);
+    }
+    function update(delta) {
+      if (gameState !== 'playing') return;
+      let x = Number(inputActive('right')) - Number(inputActive('left'));
+      let y = Number(inputActive('down')) - Number(inputActive('up'));
+      const length = Math.hypot(x, y);
+      if (length > 0) { x /= length; y /= length; }
+      player.x = Math.max(PLAYER_RADIUS, Math.min(canvas.width - PLAYER_RADIUS, player.x + x * PLAYER_SPEED * delta));
+      player.y = Math.max(PLAYER_RADIUS, Math.min(canvas.height - PLAYER_RADIUS, player.y + y * PLAYER_SPEED * delta));
+      for (const item of items) {
+        if (!item.collected && Math.hypot(player.x - item.x, player.y - item.y) < PLAYER_RADIUS + ITEM_RADIUS) {
+          item.collected = true;
+          collected += 1;
+          countText.textContent = `${collected} / ${items.length}`;
+        }
+      }
+      if (items.length > 0 && collected === items.length) endGame();
+    }
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = '#e4f6dc'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = '#f5efd9'; ctx.fillRect(0, 190, canvas.width, 75); ctx.fillRect(350, 0, 70, canvas.height);
+      ctx.strokeStyle = '#ccdec7'; ctx.lineWidth = 1;
+      for (let x = 0; x <= 800; x += 50) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, 450); ctx.stroke(); }
+      for (let y = 0; y <= 450; y += 50) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(800, y); ctx.stroke(); }
+      // 그림 대신 기본 도형을 사용합니다. 주인공·물건을 구별할 수 있게 색과 모양을 유지하세요.
+      for (const item of items) {
+        if (item.collected) continue;
+        ctx.fillStyle = '#17332d'; ctx.fillRect(item.x - 13, item.y - 11, 30, 30);
+        ctx.fillStyle = ITEM_COLOR; ctx.fillRect(item.x - 15, item.y - 15, 30, 30);
+        ctx.strokeStyle = '#17332d'; ctx.lineWidth = 2; ctx.strokeRect(item.x - 15, item.y - 15, 30, 30);
+        ctx.fillStyle = 'rgba(255,255,255,.75)'; ctx.fillRect(item.x - 9, item.y - 9, 10, 5);
+      }
+      ctx.fillStyle = '#17332d'; ctx.beginPath(); ctx.arc(player.x + 2, player.y + 4, PLAYER_RADIUS, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#00d6b4'; ctx.beginPath(); ctx.arc(player.x, player.y, PLAYER_RADIUS, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = '#17332d'; ctx.lineWidth = 2; ctx.stroke();
+      ctx.fillStyle = '#17332d'; ctx.beginPath(); ctx.arc(player.x - 5, player.y - 3, 2, 0, Math.PI * 2); ctx.arc(player.x + 5, player.y - 3, 2, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(player.x, player.y + 1, 7, 0.2, Math.PI - 0.2); ctx.stroke();
+    }
+    function frame(time) {
+      const delta = previousTime === null ? 0 : Math.min((time - previousTime) / 1000, 0.05);
+      previousTime = time;
+      update(delta); draw();
+      requestAnimationFrame(frame); // 게임 시작을 여러 번 눌러도 이 루프는 한 번만 실행됩니다.
+    }
+    document.getElementById('startButton').addEventListener('click', startGame);
+    document.getElementById('retryButton').addEventListener('click', startGame);
+    document.getElementById('homeButton').addEventListener('click', () => {
+      resetGame(); setState('intro'); document.getElementById('startButton').focus({ preventScroll: true });
+    });
+    window.addEventListener('keydown', event => {
+      const direction = directions[event.key];
+      const gameHasFocus = document.activeElement === canvas || directionPad.contains(document.activeElement);
+      if (gameState === 'playing' && direction && gameHasFocus) { event.preventDefault(); heldKeys.add(direction); }
+    });
+    window.addEventListener('keyup', event => { const direction = directions[event.key]; if (direction) heldKeys.delete(direction); });
+    directionPad.querySelectorAll('button').forEach(button => {
+      button.addEventListener('pointerdown', event => {
+        if (gameState !== 'playing') return;
+        event.preventDefault(); button.setPointerCapture(event.pointerId);
+        heldPointers.set(event.pointerId, button.dataset.direction); button.classList.add('pressed'); canvas.focus({ preventScroll: true });
+      });
+      const release = event => { heldPointers.delete(event.pointerId); if (![...heldPointers.values()].includes(button.dataset.direction)) button.classList.remove('pressed'); };
+      button.addEventListener('pointerup', release); button.addEventListener('pointercancel', release); button.addEventListener('lostpointercapture', release);
+    });
+    canvas.addEventListener('pointerdown', () => { if (gameState === 'playing') canvas.focus({ preventScroll: true }); });
+    window.addEventListener('blur', clearInputs);
+    document.addEventListener('visibilitychange', () => { clearInputs(); previousTime = null; });
+    resetGame(); draw(); requestAnimationFrame(frame);
+  </script>
+</body>
+</html>

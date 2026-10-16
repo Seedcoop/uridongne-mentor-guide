@@ -1,0 +1,155 @@
+{
+  "version": 1,
+  "weeks": [
+    "1회차(11/6)",
+    "2회차(11/13)",
+    "3회차(11/20)",
+    "4회차(11/27)",
+    "5회차(12/4)",
+    "6회차(12/11)"
+  ],
+  "source": {
+    "log": "https://docs.google.com/forms/d/e/1FAIpQLSfiBABEI1kRyMxHjeYKCSNd4gxSNj98omZW73n1MRcc_EypBQ/viewform",
+    "plan": "웹가이드의 주차별 운영안"
+  },
+  "forms": {
+    "plan": {
+      "title": "활동계획",
+      "description": "이번 주 목표와 진행 방법을 준비합니다.",
+      "fields": [
+        {
+          "key": "name",
+          "label": "이름",
+          "type": "text",
+          "required": true,
+          "max": 100
+        },
+        {
+          "key": "team",
+          "label": "담당 팀",
+          "type": "text",
+          "required": true,
+          "max": 100
+        },
+        {
+          "key": "session",
+          "label": "회차",
+          "type": "session",
+          "required": true
+        },
+        {
+          "key": "goal",
+          "label": "활동 목표",
+          "type": "textarea",
+          "required": true,
+          "max": 6000,
+          "help": "청소년이 이번 활동에서 경험하고 결정할 것을 적어 주세요."
+        },
+        {
+          "key": "flow",
+          "label": "활동 흐름과 시간 배분",
+          "type": "textarea",
+          "required": true,
+          "max": 12000,
+          "help": "활동명·소요 분·진행 방법을 적어 주세요. 휴식 포함 120분입니다."
+        },
+        {
+          "key": "question",
+          "label": "멘토 질문과 참여 방법",
+          "type": "textarea",
+          "required": true,
+          "max": 6000,
+          "help": "청소년의 생각을 듣는 질문과 고르게 참여할 방법을 적어 주세요."
+        },
+        {
+          "key": "materials",
+          "label": "준비 재료와 도구",
+          "type": "textarea",
+          "required": true,
+          "max": 6000,
+          "help": "멘토 게임·기기·빈 종이·웹도구 등 실제로 준비할 것을 적어 주세요."
+        },
+        {
+          "key": "completion",
+          "label": "완료 기준과 다음 주 연결",
+          "type": "textarea",
+          "required": true,
+          "max": 6000,
+          "help": "활동 끝에 확인할 것과 남길 파일·다음 주 이어갈 것을 적어 주세요."
+        }
+      ]
+    },
+    "log": {
+      "title": "멘토 교육일지",
+      "description": "활동 종료 후 실제 진행과 청소년의 선택을 기록합니다.",
+      "fields": [
+        {
+          "key": "name",
+          "label": "이름",
+          "type": "text",
+          "required": true,
+          "max": 100
+        },
+        {
+          "key": "team",
+          "label": "담당 팀",
+          "type": "text",
+          "required": true,
+          "max": 100
+        },
+        {
+          "key": "session",
+          "label": "회차",
+          "type": "session",
+          "required": true
+        },
+        {
+          "key": "content",
+          "label": "진행한 교육 내용",
+          "type": "textarea",
+          "required": true,
+          "max": 12000,
+          "help": "주요 활동과 실제 진행 내용을 작성해 주세요. 계획과 달라진 내용이 있다면 함께 적어 주세요."
+        },
+        {
+          "key": "observations",
+          "label": "청소년 관찰 내용",
+          "type": "textarea",
+          "required": true,
+          "max": 12000,
+          "help": "청소년의 참여도, 이해도, 협력 과정, 어려워한 부분 등을 구체적인 사례와 함께 작성해 주세요."
+        },
+        {
+          "key": "outputs",
+          "label": "산출물",
+          "type": "textarea",
+          "required": true,
+          "max": 12000,
+          "help": "청소년이 만든 결과물에 대해 작성해 주세요."
+        },
+        {
+          "key": "notes",
+          "label": "교육 특이사항",
+          "type": "textarea",
+          "required": true,
+          "max": 12000,
+          "help": "청소년 지원 필요사항, 운영진에게 전달할 내용을 작성해 주세요. 없으면 ‘없음’으로 입력해 주세요."
+        },
+        {
+          "key": "achievement",
+          "label": "활동 계획 달성률",
+          "type": "checkboxes",
+          "required": true,
+          "help": "이번 회차에 계획한 활동을 얼마나 완료했는지 선택해 주세요.",
+          "options": [
+            "0~20%",
+            "20%~40%",
+            "40%~60%",
+            "60%~80%",
+            "80%~100%"
+          ]
+        }
+      ]
+    }
+  }
+}
