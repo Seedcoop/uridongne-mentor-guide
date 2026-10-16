@@ -8,7 +8,7 @@
   const linkedWeek = /^[1-6]$/.test(requestedWeek) ? Number(requestedWeek) : null;
   const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const uuid = () => crypto.randomUUID();
-  let session = null, draft = {}, busy = false, expiryTimer, scriptsPromise, routeVersion = 0, selectedWeek = linkedWeek || 1;
+  let session = null, draft = {}, busy = false, expiryTimer, scriptsPromise, routeVersion = 0, selectedWeek = linkedWeek || 1, gateComposing = false;
 
   function storageRead(key) { try { return sessionStorage.getItem(key); } catch { return null; } }
   function storageWrite(key, value) { try { sessionStorage.setItem(key, value); return true; } catch { return false; } }
@@ -38,7 +38,8 @@
   }
   function enterGate(reason = '') {
     routeVersion++;
-    main.innerHTML = `<section class="student-gate"><div class="student-intro"><p class="eyebrow">우리동네 플레이어 · 6주 활동</p><h1>우리 생각을<br>작품으로 만드는 시간.</h1><p>이번 주 웹 도구에서 생각을 정리하고,<br>팀명과 이름을 적어 응답을 제출해요.</p><div class="student-flow">주차 선택 <span>→</span> 입장코드 <span>→</span> 활동 · 제출</div></div><form class="student-gate-card" id="studentGate"><h2>이번 주 활동에 입장하기</h2><p>선생님이 알려 준 주차와 입장코드를 사용해요.</p><label for="studentWeek">활동 주차<select id="studentWeek" name="week" required>${WEEK_TITLES.map((title, index) => `<option value="${index + 1}" ${selectedWeek===index+1?'selected':''}>${index + 1}주차 · ${title}</option>`).join('')}</select></label><label for="studentCode">입장코드<input id="studentCode" name="code" type="password" required maxlength="64" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="이번 주 입장코드"></label><p class="student-hint">입장코드는 주차마다 달라요. 한글 키워드를 그대로 입력해 주세요.</p><div id="studentMessage" class="student-message" role="alert" tabindex="-1" hidden></div><button class="button" type="submit">활동 시작하기 →</button><p class="student-note">학생 계정이나 로그인이 필요하지 않아요.<br>입장 후에는 선택한 주차의 웹 도구를 사용할 수 있어요.</p></form></section>`;
+    gateComposing = false;
+    main.innerHTML = `<section class="student-gate"><div class="student-intro"><p class="eyebrow">우리동네 플레이어 · 6주 활동</p><h1>우리 생각을<br>작품으로 만드는 시간.</h1><p>이번 주 웹 도구에서 생각을 정리하고,<br>팀명과 이름을 적어 응답을 제출해요.</p><div class="student-flow">주차 선택 <span>→</span> 입장코드 <span>→</span> 활동 · 제출</div></div><form class="student-gate-card" id="studentGate"><h2>이번 주 활동에 입장하기</h2><p>선생님이 알려 준 주차와 입장코드를 사용해요.</p><label for="studentWeek">활동 주차<select id="studentWeek" name="week" required>${WEEK_TITLES.map((title, index) => `<option value="${index + 1}" ${selectedWeek===index+1?'selected':''}>${index + 1}주차 · ${title}</option>`).join('')}</select></label><label for="studentCode">입장코드<input id="studentCode" name="code" type="text" required maxlength="64" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="이번 주 입장코드"></label><p class="student-hint">입장코드는 주차마다 달라요. 한글 키워드를 그대로 입력해 주세요.</p><div id="studentMessage" class="student-message" role="alert" tabindex="-1" hidden></div><button class="button" type="submit">활동 시작하기 →</button><p class="student-note">학생 계정이나 로그인이 필요하지 않아요.<br>입장 후에는 선택한 주차의 웹 도구를 사용할 수 있어요.</p></form></section>`;
     if (reason) message(reason);
   }
   function expire(reason = '입장 시간이 지났어요. 이번 주 입장코드를 다시 입력해 주세요.') {
@@ -117,9 +118,21 @@
     afterRender:lockTool
   });
 
+  // Keep Korean composition in the browser; Enter should commit a syllable first.
+  document.addEventListener('compositionstart', event => {
+    if (event.target.id === 'studentCode') gateComposing = true;
+  });
+  document.addEventListener('compositionend', event => {
+    if (event.target.id === 'studentCode') gateComposing = false;
+  });
+  document.addEventListener('keydown', event => {
+    if (event.target.id !== 'studentCode') return;
+    const enter = event.key === 'Enter' || event.code === 'Enter' || event.code === 'NumpadEnter' || event.keyCode === 13;
+    if (enter && (gateComposing || event.isComposing || event.keyCode === 229)) event.preventDefault();
+  });
   document.addEventListener('submit', async event => {
     if (event.target.id === 'studentGate') {
-      event.preventDefault(); if (busy) return;
+      event.preventDefault(); if (busy || gateComposing || event.isComposing) return;
       const form = event.target, week = Number(form.elements.week.value), code = form.elements.code.value.trim();
       if (!Number.isInteger(week) || week < 1 || week > 6 || !code) return message('주차를 고르고 입장코드를 입력해 주세요.');
       selectedWeek = week;

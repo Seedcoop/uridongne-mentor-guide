@@ -226,25 +226,52 @@ async function frontendChecks() {
   vm.runInContext(read('public/moodboard.js'), sandbox);
   const api = window.WorkshopTools;
   equals('student tool never reads mentor local drafts', api.getState().records, {});
-  async function dispatch(surface, type, target = {}) {
-    const event = { target, preventDefault() {} };
+  async function dispatch(surface, type, target = {}, properties = {}) {
+    const event = { target, defaultPrevented: false, preventDefault() { this.defaultPrevented = true; }, ...properties };
     for (const listener of listeners[surface][type] || []) await listener(event);
+    return event;
   }
   function gateForm(code = 'offline-student-code', week = 1) {
     const form = node('studentGate');
     form.elements = { week: { value: String(week) }, code: { value: code } };
     return form;
   }
+  check('Korean entry code uses a text control that allows IME input', /id="studentCode" name="code" type="text"/.test(node('main').innerHTML));
+  const composingCode = { id: 'studentCode', dataset: {}, value: '한글입장확ㅇ', closest: () => null };
+  await dispatch('document', 'compositionstart', composingCode);
+  const trackedIMEEnter = await dispatch('document', 'keydown', composingCode, { key: 'Enter', code: 'Enter', isComposing: false, keyCode: 13 });
+  check('tracked composition suppresses Enter even without keyboard flags', trackedIMEEnter.defaultPrevented);
+  const composingEnter = await dispatch('document', 'keydown', composingCode, { key: 'Enter', code: 'Enter', isComposing: true, keyCode: 229 });
+  check('composition Enter suppresses implicit gate submission', composingEnter.defaultPrevented);
+  const imeNetwork = network.length;
+  const incompleteGate = gateForm(composingCode.value);
+  await dispatch('document', 'submit', incompleteGate);
+  equals('gate cannot submit an unfinished Korean syllable', network.length, imeNetwork);
+  equals('composition guard never clears or rewrites the code', incompleteGate.elements.code.value, '한글입장확ㅇ');
+  composingCode.value = '한글입장확인';
+  await dispatch('document', 'compositionend', composingCode);
+  equals('composition end does not automatically enter or change input', [network.length, composingCode.value], [imeNetwork, '한글입장확인']);
+  const flaggedIMEEnter = await dispatch('document', 'keydown', composingCode, { key: 'Enter', code: 'Enter', isComposing: true, keyCode: 13 });
+  check('keyboard composition flag suppresses Enter without a start event', flaggedIMEEnter.defaultPrevented);
+  const legacyIMEEnter = await dispatch('document', 'keydown', composingCode, { key: 'Enter', code: 'Enter', isComposing: false, keyCode: 229 });
+  check('legacy keyCode 229 also prevents accidental Enter submission', legacyIMEEnter.defaultPrevented);
+  await dispatch('document', 'submit', gateForm('한글입장확인'), { isComposing: true });
+  equals('submit event composition flag also blocks unfinished entry', network.length, imeNetwork);
+  const normalEnter = await dispatch('document', 'keydown', composingCode, { key: 'Enter', code: 'Enter', isComposing: false, keyCode: 13 });
+  check('a separate Enter after composition can submit the gate', !normalEnter.defaultPrevented);
+  const otherInputEnter = await dispatch('document', 'keydown', { id: 'studentName' }, { key: 'Enter', isComposing: true, keyCode: 229 });
+  check('entry IME guard leaves other input fields unchanged', !otherInputEnter.defaultPrevented);
   nextResponse = { ok: false, error: { code: 'INVALID_CODE', message: '잘못된 테스트 코드' } };
   await dispatch('document', 'submit', gateForm());
   check('wrong code leaves student at gate with no session', !student.state().session && node('studentMessage').textContent === '잘못된 테스트 코드');
   equals('code input cleared after failed verification', node('studentGate').elements.code.value, '');
   nextResponse = { ok: true, session: { token: 'T'.repeat(43), week: 1, expiresAt: new Date(Date.now() + 3600000).toISOString() } };
-  await dispatch('document', 'submit', gateForm());
+  await dispatch('document', 'submit', gateForm('한글입장확인'));
   check('valid code opens current-week response tool', node('studentTool').innerHTML.includes('아이디어 한 장 기획서'));
+  equals('completed Korean code reaches verification intact', network.at(-1).body.code, '한글입장확인');
   equals('successful entry updates week query for reliable reload', location.search, '?week=1');
   equals('successful gateway uses no Auth endpoint', network.every(call => call.url.endsWith('/functions/v1/student-portal')), true);
-  check('entry code is not stored', !JSON.stringify([...sessionStore.values]).includes('offline-student-code'));
+  check('entry code is not stored', !JSON.stringify([...sessionStore.values]).includes('offline-student-code') && !JSON.stringify([...sessionStore.values]).includes('한글입장확인'));
   const currentSession = plain(student.state().session);
   check('current week access scoped in audience', window.WorkshopAudience.canUseWeek(1) && !window.WorkshopAudience.canUseWeek(2));
   equals('direct cross-week tool API returns no markup', api.render(6), '');
