@@ -148,6 +148,7 @@ async function requireAccess(hash) {
 }
 function hasAuthenticatedSession(){return Boolean(S.me?.user&&S.user&&S.me.user.id===S.user.id&&!S.user.mustChangePassword&&CLIENT?.hasSession());}
 function hasGuideAccess(){return S.guideAccess&&hasAuthenticatedSession();}
+function shouldBlurGuideWeek(week){return hasGuideAccess()&&S.user.role==='mentor'&&Number.isInteger(week)&&week>=4&&week<=6;}
 function leaveGuide(keepReturn){S.guideAccess=false;if(!keepReturn)S.returnTo=null;}
 let accessCheck=null;
 async function revalidateAccess(){
@@ -155,7 +156,7 @@ async function revalidateAccess(){
  if(accessCheck)return accessCheck;
  const epoch=S.epoch;
  accessCheck=(async()=>{
-  try{const me=await api('me');if(epoch!==S.epoch)return;if(!me.user){expireSession();return;}S.user=me.user;S.me=me;authSlot();if(me.user.mustChangePassword){S.guideAccess=false;authChanged();}}
+  try{const me=await api('me');if(epoch!==S.epoch)return;if(!me.user){expireSession();return;}const priorRole=S.user?.role;S.user=me.user;S.me=me;authSlot();if(me.user.mustChangePassword||priorRole!==me.user.role){S.guideAccess=false;authChanged();}}
   catch(e){if(epoch===S.epoch){S.guideAccess=false;authChanged();}}
  })();
  try{await accessCheck;}finally{accessCheck=null;}
@@ -267,6 +268,6 @@ document.addEventListener('click',e=>{
 });
 window.addEventListener('beforeunload',e=>{if(S.dirty){e.preventDefault();e.returnValue='';}});
 window.addEventListener('mentor-portal-auth-change',()=>{if(!hasAuthenticatedSession())window.StudentAdmin?.reset();});
-window.MentorPortal={mount,openLogin,requireAccess,hasGuideAccess,hasAuthenticatedSession,revalidateAccess,leaveGuide};
+window.MentorPortal={mount,openLogin,requireAccess,hasGuideAccess,hasAuthenticatedSession,shouldBlurGuideWeek,revalidateAccess,leaveGuide};
 })();
 

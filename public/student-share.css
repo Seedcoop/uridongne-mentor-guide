@@ -11,5 +11,22 @@
 .student-entry-share.compact{grid-template-columns:minmax(0,1fr) 128px;padding:17px;gap:15px;margin-top:20px}
 .student-entry-share.compact img{width:128px;height:128px}
 .student-entry-share.compact h4{font-size:15px}
+.student-qr-preview{display:inline-flex;flex-direction:column;align-items:center;gap:7px;max-width:100%;padding:0;border:0;border-radius:9px;background:transparent;color:#16456f;cursor:zoom-in}
+.student-qr-preview>span{font-size:11px;font-weight:700;line-height:1.5;text-decoration:underline;text-underline-offset:3px}
+.student-qr-preview:hover img{box-shadow:0 0 0 3px #86b9d2}
+body.student-qr-open{overflow:hidden}
+.student-qr-dialog{width:min(660px,calc(100% - 32px));max-height:calc(100vh - 32px);max-height:calc(100dvh - 32px);margin:auto;padding:26px;border:1px solid #c6dce8;border-radius:22px;background:#fff;color:#07104f;box-shadow:0 24px 90px #07104f55;overflow:auto}
+.student-qr-dialog::backdrop{background:#07104fbf}
+.student-qr-dialog-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:18px}
+.student-qr-dialog-heading .eyebrow{margin:0 0 5px;font-size:10px}
+.student-qr-dialog-heading h2{margin:0;font-size:24px;line-height:1.4;letter-spacing:-.04em}
+.student-qr-dialog-heading .button{flex:none;min-height:40px;padding:8px 13px}
+#studentQRDescription{font-size:13px;line-height:1.7;margin:14px 0 0;color:#536486}
+.student-qr-dialog-image{display:block;width:min(100%,520px,max(160px,calc(100vh - 260px)));width:min(100%,520px,max(160px,calc(100dvh - 260px)));height:auto;aspect-ratio:1;margin:22px auto;background:#fff}
+.student-qr-dialog-footer{display:flex;justify-content:center;align-items:center;gap:15px;flex-wrap:wrap}
+.student-qr-dialog-footer .button{min-height:44px;font-size:13px;padding:10px 18px}
+.student-qr-dialog-footer p{font-size:12px;color:#536486;margin:0}
 @media(max-width:640px){.student-entry-share,.student-entry-share.compact{grid-template-columns:minmax(0,1fr);padding:17px;gap:17px}.student-entry-share figure{justify-self:center}.student-entry-share img,.student-entry-share.compact img{width:160px;height:160px}.student-entry-share .button{flex:1 1 auto}.student-entry-address{font-size:11px}}
+@media(max-width:480px){.student-qr-dialog{padding:19px;border-radius:17px}.student-qr-dialog-heading{gap:10px}.student-qr-dialog-heading h2{font-size:20px}.student-qr-dialog-heading .button{font-size:11px;padding:8px 10px}.student-qr-dialog-footer{gap:10px}.student-qr-dialog-footer p{width:100%;text-align:center}.student-qr-dialog-image{margin:18px auto}}
 @media print{.student-entry-share{box-shadow:none;background:#fff}.student-entry-share .actions{display:none!important}.student-entry-share figure,.student-entry-share img{break-inside:avoid}}
+@media print{.student-qr-preview>span,.student-qr-dialog{display:none!important}}
