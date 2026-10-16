@@ -5,6 +5,7 @@
   const key = String(config.publishableKey || '');
   const sessionKey = String(config.sessionKey || 'seedcoop.uridongne-mentor-guide.portal.session.v1');
   const endpoint = base + '/functions/v1/' + encodeURIComponent(config.functionName || 'mentor-portal');
+  const studentEndpoint = base + '/functions/v1/student-portal';
   const configured = /^https:\/\/[a-z0-9-]+\.supabase\.co$/i.test(base) &&
     (/^sb_publishable_[a-z0-9_-]+$/i.test(key) || /^eyJ[a-z0-9_.-]+$/i.test(key));
   const maxSessionMs = Math.min(12, Number(config.maxSessionHours) || 12) * 60 * 60 * 1000;
@@ -103,34 +104,34 @@
     }
     return session.access_token;
   }
-  async function send(action, options, token) {
+  async function send(target, action, options, token) {
     const headers = { apikey: key, 'Content-Type': 'application/json', Accept: action === 'export' ? 'text/csv, application/json' : 'application/json' };
     if (token) headers.Authorization = 'Bearer ' + token;
-    return fetch(endpoint, {
+    return fetch(target, {
       method: 'POST', credentials: 'omit', cache: 'no-store', headers,
       body: JSON.stringify({ ...(options.query || {}), ...(options.body || {}), action }),
       signal: options.signal
     });
   }
-  async function request(action, options) {
+  async function requestAt(target, action, options, studentAdmin) {
     options = options || {};
     assertReady();
-    const anonymous = action === 'login';
+    const anonymous = !studentAdmin && action === 'login';
     try {
       const token = anonymous ? null : await accessToken();
-      let response = await send(action, options, token);
+      let response = await send(target, action, options, token);
       // A token can expire between the local check and the server request.
       // Retry once after refresh; server-side session/role checks still apply.
       if (response.status === 401 && !anonymous && action !== 'logout' && session) {
         const refreshed = await refreshSession();
-        response = await send(action, options, refreshed);
+        response = await send(target, action, options, refreshed);
       }
       if (!response.ok) {
         const error = await parseError(response);
         if (response.status === 401 && !anonymous) clearSession();
         throw error;
       }
-      if (action === 'export') return response.blob();
+      if (!studentAdmin && action === 'export') return response.blob();
       let result;
       try { result = await response.json(); }
       catch (_) { throw portalError('서버 응답을 읽지 못했습니다. 잠시 후 다시 시도해 주세요.', 502, 'INVALID_RESPONSE'); }
@@ -138,17 +139,25 @@
         const error = portalError(result.error?.message || '요청을 완료하지 못했습니다.', 400, result.error?.code, result.record);
         throw error;
       }
-      if (result.session) {
+      if (!studentAdmin && result.session) {
         generation++;
         saveSession(result.session, action === 'login');
       }
       return result;
     } finally {
-      if (action === 'logout') clearSession();
+      if (!studentAdmin && action === 'logout') clearSession();
     }
+  }
+  function request(action, options) { return requestAt(endpoint, action, options, false); }
+  function requestStudentAdmin(action, options) {
+    if (!['admin-list','admin-detail','admin-codes','admin-code-set'].includes(action)) {
+      throw portalError('지원하지 않는 학생 관리 요청입니다.', 400, 'UNKNOWN_ACTION');
+    }
+    return requestAt(studentEndpoint, action, options, true);
   }
   window.MentorPortalClient = Object.freeze({
     request,
+    requestStudentAdmin,
     isConfigured: () => configured,
     hasSession: () => { try { assertLifetime(); return Boolean(session); } catch (_) { return false; } },
     clearSession

@@ -4,3 +4,8 @@ project_id = "uridongne-mentor-guide"
 enabled = true
 verify_jwt = false
 entrypoint = "./functions/mentor-portal/index.ts"
+
+[functions.student-portal]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/student-portal/index.ts"

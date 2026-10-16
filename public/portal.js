@@ -91,8 +91,8 @@ function accountEditor() {
 function accountsView() {if(accountsLoading)return '<div class="mp-loading" role="status">계정 목록을 불러오는 중입니다…</div>';return accountEditor()+'<section class="mp-panel"><h3>등록된 계정</h3><div class="mp-account-list">'+S.accounts.map(a=>'<button type="button" class="mp-account-row" data-mp-action="account-edit" data-id="'+esc(a.id)+'"><span><strong>'+esc(a.name||a.username)+'</strong><small>'+esc(a.username)+' · '+esc(a.team||'팀 미지정')+'</small></span><span><b>'+esc(a.role==='admin'?'관리자':'멘토')+'</b><small>'+esc(!a.active?'비활성':a.mustChangePassword?'비밀번호 변경 필요':'사용 중')+'</small></span></button>').join('')+'</div></section>';}
 function adminView() {
  if(S.user.role!=='admin')return '<section class="mp-panel"><h3>관리자만 볼 수 있는 화면입니다</h3><a class="mp-link" href="#records">내 기록으로 이동 →</a></section>';
- return heading('관리자','제출 기록을 검토하고 멘토 계정을 관리해요.')+'<div class="mp-tabs" role="tablist" aria-label="관리자 기능">'+['records','accounts'].map((t,i)=>'<button type="button" role="tab" aria-selected="'+(S.adminTab===t)+'" data-mp-action="admin-tab" data-tab="'+t+'">'+(i?'계정 관리':'제출 기록 검토')+'</button>').join('')+'</div>'+
- (S.adminTab==='accounts'?accountsView():adminFilters()+'<div class="mp-admin-grid"><section class="mp-panel"><h3>기록 '+S.records.length+'건</h3>'+recordList(S.records,true)+'</section>'+recordDetail(S.adminDetail)+'</div>');
+ return heading('관리자','제출 기록을 검토하고 참여 계정을 관리해요.')+'<div class="mp-tabs" role="tablist" aria-label="관리자 기능">'+[['records','제출 기록 검토'],['accounts','계정 관리'],['students','학생 응답']].map(([t,label])=>'<button type="button" role="tab" aria-selected="'+(S.adminTab===t)+'" data-mp-action="admin-tab" data-tab="'+t+'">'+label+'</button>').join('')+'</div>'+
+ (S.adminTab==='accounts'?accountsView():S.adminTab==='students'?(window.StudentAdmin?.render()||'<p>학생 응답 화면을 불러오지 못했습니다.</p>'):adminFilters()+'<div class="mp-admin-grid"><section class="mp-panel"><h3>기록 '+S.records.length+'건</h3>'+recordList(S.records,true)+'</section>'+recordDetail(S.adminDetail)+'</div>');
 }
 function passwordForm(forced) {return '<form data-mp-form="password" class="mp-panel mp-account-form" novalidate><h3>'+esc(forced?'먼저 비밀번호를 바꿔 주세요':'비밀번호 변경')+'</h3>'+(forced?'<p class="mp-note">임시 비밀번호로 로그인했습니다. 본인 비밀번호로 변경한 뒤 기록을 작성할 수 있어요.</p>':'')+'<div class="mp-form-message" role="alert"></div><div class="mp-field"><label for="mpCurrentPassword">현재 비밀번호</label><input id="mpCurrentPassword" type="password" name="currentPassword" autocomplete="current-password" maxlength="128" required></div><div class="mp-field"><label for="mpNewPassword">새 비밀번호</label><input id="mpNewPassword" type="password" name="newPassword" autocomplete="new-password" minlength="8" maxlength="128" required><p class="mp-help">8~128자로 입력해 주세요.</p></div><div class="mp-field"><label for="mpConfirmPassword">새 비밀번호 확인</label><input id="mpConfirmPassword" type="password" name="confirmPassword" autocomplete="new-password" minlength="8" maxlength="128" required></div><button type="submit" class="mp-button">비밀번호 변경</button></form>';}
 function accountView() {
@@ -117,6 +117,7 @@ function render() {
 }
 async function loadList(epoch) {
  if(!S.user||S.user.mustChangePassword)return;
+ if(S.view==='admin'&&S.user.role==='admin'&&S.adminTab==='students')return window.StudentAdmin?.load({signal:S.controller?.signal,isCurrent:()=>alive(epoch)&&S.view==='admin'&&S.adminTab==='students'&&S.user?.role==='admin'});
  const action=S.view==='admin'&&S.user.role==='admin'?(S.adminTab==='accounts'?'accounts':'admin-records'):'records';
  if(!['records','admin'].includes(S.view))return;
  const sequence=++listSequence;
@@ -265,6 +266,7 @@ document.addEventListener('click',e=>{
  if(action==='account-reset'&&S.accountEdit)modalFrame('임시 비밀번호 재설정','<form data-mp-form="account-reset" novalidate><p>'+esc(S.accountEdit.name||S.accountEdit.username)+' 계정의 비밀번호를 재설정합니다. 다음 로그인에서 본인 비밀번호로 변경해야 합니다.</p><div class="mp-form-message" role="alert"></div><div class="mp-field"><label for="mpResetPassword">새 임시 비밀번호</label><input id="mpResetPassword" type="password" name="password" autocomplete="new-password" minlength="8" maxlength="128" required><p class="mp-help">8~128자로 입력해 주세요.</p></div><button type="submit" class="mp-button">임시 비밀번호 재설정</button></form>');
 });
 window.addEventListener('beforeunload',e=>{if(S.dirty){e.preventDefault();e.returnValue='';}});
+window.addEventListener('mentor-portal-auth-change',()=>{if(!hasAuthenticatedSession())window.StudentAdmin?.reset();});
 window.MentorPortal={mount,openLogin,requireAccess,hasGuideAccess,hasAuthenticatedSession,revalidateAccess,leaveGuide};
 })();
 

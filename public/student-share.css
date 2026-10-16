@@ -1,0 +1,15 @@
+.student-entry-share{display:grid;grid-template-columns:minmax(0,1fr) 160px;gap:22px;align-items:center;grid-column:1/-1;padding:22px;border:1px solid #c6dce8;border-radius:17px;background:#f1f8fc;margin-top:20px;break-inside:avoid}
+.student-entry-share .eyebrow{font-size:10px;margin:0 0 7px;color:#385e79}
+.student-entry-share h4{font-size:17px;margin:0 0 9px;line-height:1.6;color:#07104f}
+.student-entry-share p:not(.eyebrow){font-size:12px;line-height:1.85;margin:0 0 12px}
+.student-entry-address{display:block;font-size:11px;line-height:1.85;overflow-wrap:anywhere;word-break:break-all;color:#16456f;text-underline-offset:3px}
+.student-entry-share .actions{margin-top:15px;gap:7px;flex-wrap:wrap}
+.student-entry-share .button{font-size:11px;min-height:36px;padding:8px 11px}
+.student-entry-share figure{margin:0;text-align:center}
+.student-entry-share img{display:block;width:160px;height:160px;max-width:100%;background:#fff;border-radius:7px}
+.student-entry-share figcaption{font-size:10px;margin-top:8px;color:#436277}
+.student-entry-share.compact{grid-template-columns:minmax(0,1fr) 128px;padding:17px;gap:15px;margin-top:20px}
+.student-entry-share.compact img{width:128px;height:128px}
+.student-entry-share.compact h4{font-size:15px}
+@media(max-width:640px){.student-entry-share,.student-entry-share.compact{grid-template-columns:minmax(0,1fr);padding:17px;gap:17px}.student-entry-share figure{justify-self:center}.student-entry-share img,.student-entry-share.compact img{width:160px;height:160px}.student-entry-share .button{flex:1 1 auto}.student-entry-address{font-size:11px}}
+@media print{.student-entry-share{box-shadow:none;background:#fff}.student-entry-share .actions{display:none!important}.student-entry-share figure,.student-entry-share img{break-inside:avoid}}
