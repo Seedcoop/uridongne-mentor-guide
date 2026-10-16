@@ -11,6 +11,8 @@ const { webcrypto } = require('node:crypto');
 const root = path.resolve(__dirname, '..');
 const read = relative => fs.readFileSync(path.join(root, relative), 'utf8');
 const plain = value => JSON.parse(JSON.stringify(value));
+// UI wording may change without changing the deployed answer validation contract.
+const fieldContract = field => ({ key: field.key, required: Boolean(field.required), ...(field.options ? { options: field.options } : {}) });
 const checks = [];
 function check(label, condition) { assert(condition, label); checks.push(label); }
 function equals(label, actual, expected) { assert.deepEqual(plain(actual), plain(expected), label); checks.push(label); }
@@ -54,8 +56,8 @@ async function backendChecks() {
   const dummyHash = await api.codeHash(dummyCode, dummySalt);
   const toolConfig = JSON.parse(read('public/studio.js').match(/const CONFIG=(\{.*\});\r?\nconst TOOLS=/)[1]);
   for (const tool of toolConfig.tools) {
-    const expected = tool.fields.map(field => ({ key: field.key, label: field.label, required: Boolean(field.required), ...(field.options ? { options: field.options } : {}) }));
-    equals('server schema mirrors tool week ' + tool.week, api.TOOL_SCHEMA[tool.week], expected);
+    const expected = tool.fields.map(fieldContract);
+    equals('server validation contract mirrors tool week ' + tool.week, api.TOOL_SCHEMA[tool.week].map(fieldContract), expected);
   }
   function answers(week = 1) {
     return Object.fromEntries(api.TOOL_SCHEMA[week].map(field => [field.key, field.required ? field.options?.[0] || '학생이 직접 쓴 응답' : '']));
@@ -156,7 +158,7 @@ function sqlChecks(toolConfig) {
   const sql = read('supabase/migrations/202610160002_students.sql');
   const normalized = sql.replace(/\s+/g, ' ');
   const schema = JSON.parse(sql.match(/declare schema jsonb := '(.*?)'::jsonb;/s)[1]);
-  for (const tool of toolConfig.tools) equals('SQL schema mirrors week ' + tool.week, schema[tool.week], tool.fields.map(field => ({ key: field.key, label: field.label, required: Boolean(field.required), ...(field.options ? { options: field.options } : {}) })));
+  for (const tool of toolConfig.tools) equals('SQL validation contract mirrors week ' + tool.week, schema[tool.week].map(fieldContract), tool.fields.map(fieldContract));
   for (const table of ['student_week_codes', 'student_entry_attempts', 'student_sessions', 'student_submissions']) {
     check('RLS enabled for ' + table, normalized.includes('alter table private.' + table + ' enable row level security;'));
     check('browser and service table grants revoked for ' + table, new RegExp('revoke all on [^;]*private\\.' + table + '[^;]* from public,anon,authenticated,service_role;').test(normalized));
@@ -247,6 +249,7 @@ async function frontendChecks() {
   equals('direct cross-week tool API returns no markup', api.render(6), '');
   equals('direct cross-week answer API returns no records', api.getAnswers(6), {});
   equals('moodboard API denied outside week two', window.VisualMoodboard.render(), '');
+  equals('asset request API denied outside week three', api.getAssetPrompt(3), '');
   for (const hash of ['#admin', '#records', '#week-4', '#studio/6', '#moodboard', '#toolbox/prompts']) {
     location.hash = hash; student.renderTool();
     check('direct hash stays inside current tool ' + hash, node('studentTool').innerHTML.includes('아이디어 한 장 기획서') && !node('studentTool').innerHTML.includes('멘토가 준비할'));
@@ -291,6 +294,18 @@ async function frontendChecks() {
   student.set({ ...weekTwo, expiresAt: new Date(Date.now() - 1).toISOString() });
   await dispatch('document', 'visibilitychange');
   check('expired capability clears workspace and returns to gate', !student.state().session && node('main').innerHTML.includes('id="studentGate"') && !window.WorkshopAudience.canUseWeek(2));
+
+  const weekThree = { ...currentSession, week: 3, draftId: webcrypto.randomUUID() };
+  student.set(weekThree); location.hash = '#tool'; student.renderWorkspace();
+  const weekThreeMarkup = node('studentTool').innerHTML;
+  check('week three presents asset request before implementation', weekThreeMarkup.indexOf('data-studio-mode="asset"') >= 0 && weekThreeMarkup.indexOf('data-studio-mode="asset"') < weekThreeMarkup.indexOf('data-studio-mode="prompt"'));
+  await dispatch('document', 'input', { dataset: { studioField: 'priority' }, value: '노란 우비 캐릭터 한 장, 둥근 얼굴', closest: () => null });
+  await dispatch('document', 'click', { closest: selector => selector === '[data-studio-mode]' ? { dataset: { studioMode: 'asset' }, disabled: false } : null });
+  check('asset tab renders current student selection and image request', node('studentTool').innerHTML.includes('노란 우비 캐릭터 한 장') && node('studentTool').innerHTML.includes('이번 요청에서는 게임 코드를 만들거나 수정하지 마'));
+  check('asset request requires moodboard and avoids code changes', api.getAssetPrompt(3).includes('작업 전 무드보드를 확인') && api.getAssetPrompt(3).includes('게임 코드를 만들거나 수정하지 마'));
+  await dispatch('document', 'click', { closest: selector => selector === '[data-studio-mode]' ? { dataset: { studioMode: 'prompt' }, disabled: false } : null });
+  check('implementation tab still exposes playable loop request', node('studentTool').innerHTML.includes('작은 프로토타입') && !node('studentTool').innerHTML.includes('이번 요청에서는 게임 코드를 만들거나 수정하지 마'));
+  student.forgetSession();
 
   // Run the real admin rendering code against malicious stored student values.
   const hostile = '<img src=x onerror=alert(1)>';
@@ -351,7 +366,7 @@ async function weeklyLinkChecks() {
   const copySource = appSource.slice(copyStart, appSource.indexOf("window.addEventListener('hashchange'", copyStart));
   vm.runInContext(helpers + '\n' + shareSource + '\n' + copySource + '\nglobalThis.shareApi={studentEntryShare,studentActivityShare,weekView,timelineSection,weeklyTimeline};', shareContext);
   const share = shareContext.shareApi;
-  const expectedActivities = { 1: [5], 2: [1, 3], 3: [3], 4: [3], 5: [1, 2, 6], 6: [3] };
+  const expectedActivities = { 1: [5], 2: [1, 3], 3: [1, 3], 4: [3], 5: [1, 2, 6], 6: [3] };
   const qrFiles = [];
   for (let week = 1; week <= 6; week++) {
     const url = origin + '/uridongne-mentor-guide/student.html?week=' + week;

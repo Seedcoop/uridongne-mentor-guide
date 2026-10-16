@@ -2,7 +2,7 @@
   'use strict';
   const SESSION_KEY = 'uridongne.student.session.v1';
   const PREFIX = 'uridongne.student.draft.';
-  const WEEK_TITLES = ['아이디어 한 장 기획서','무드보드와 이미지 요청','핵심 규칙 제작 요청','화면 한 부분 수정 요청','테스트 기록과 수정 요청','작품 소개와 3분 시연'];
+  const WEEK_TITLES = ['아이디어 한 장 기획서','무드보드와 게임 타이틀 만들기','이미지 애셋과 핵심 규칙 제작 요청','화면 한 부분 수정 요청','테스트 기록과 수정 요청','작품 소개와 3분 시연'];
   const main = document.getElementById('main');
   const requestedWeek = new URLSearchParams(location.search).get('week') || '';
   const linkedWeek = /^[1-6]$/.test(requestedWeek) ? Number(requestedWeek) : null;
@@ -69,7 +69,7 @@
     } finally { clearTimeout(timeout); }
   }
   function script(source) {
-    return new Promise((resolve, reject) => { const node = document.createElement('script'); node.src = source + '?v=20261016-student1'; node.onload = resolve; node.onerror = () => { node.remove(); reject(Error('웹 도구를 불러오지 못했어요. 인터넷 연결을 확인하고 다시 입장해 주세요.')); }; document.head.append(node); });
+    return new Promise((resolve, reject) => { const node = document.createElement('script'); node.src = source + '?v=20261016-week2-title1'; node.onload = resolve; node.onerror = () => { node.remove(); reject(Error('웹 도구를 불러오지 못했어요. 인터넷 연결을 확인하고 다시 입장해 주세요.')); }; document.head.append(node); });
   }
   async function loadTools() {
     if (!scriptsPromise) scriptsPromise = (async () => { if (!window.WorkshopPDF) await script('./assets/studio-pdf.js'); if (!window.WorkshopTools) await script('./studio.js'); if (!window.VisualMoodboard) await script('./moodboard.js'); })().catch(error => { scriptsPromise = null; throw error; });
@@ -85,7 +85,7 @@
       const when = new Date(receipt.submittedAt).toLocaleString('ko-KR', {timeZone:'Asia/Seoul', month:'long', day:'numeric', hour:'2-digit', minute:'2-digit', hour12:false});
       return `<div class="student-receipt" role="status"><h3>✓ 응답을 제출했어요</h3><p>${esc(draft.team)} · ${esc(draft.name)} / ${session.week}주차</p><p>${esc(when)} 제출 완료</p><p class="student-receipt-id">접수 번호 ${esc(receipt.id)}</p><div class="actions"><button class="button secondary small" type="button" data-student-action="revise">수정해서 새 응답 제출</button><button class="button secondary small" type="button" data-student-action="leave">작성 마치기</button></div><p class="student-edit-lock">접수한 응답은 저장되었어요. 내용을 바꾸려면 ‘수정해서 새 응답 제출’을 눌러 주세요.</p></div>`;
     }
-    return `<div class="student-submit-title"><div><p class="eyebrow">마지막으로 · 응답 제출</p><h2 id="studentSubmitTitle">누구의 응답인가요?</h2><p>질문 작성을 마쳤다면 팀명과 이름을 적고 제출해요.</p></div><span class="student-week-badge">${session.week}주차</span></div><form id="studentSubmitForm"><div class="student-identity"><label for="studentTeam">팀명<input id="studentTeam" name="team" maxlength="80" required autocomplete="off" value="${esc(draft.team || '')}" placeholder="함께 활동하는 팀 이름"></label><label for="studentName">이름<input id="studentName" name="name" maxlength="80" required autocomplete="off" value="${esc(draft.name || '')}" placeholder="내 이름"></label></div><div id="studentSubmitMessage" class="student-message" role="alert" tabindex="-1" hidden></div><div class="student-submit-actions"><button class="button" type="submit">이번 주 응답 제출하기 →</button><p>팀명·이름과 작성한 답변이 프로그램 운영자에게 전달돼요.<br>위에서 복사하거나 파일을 저장한 뒤에도 제출 버튼을 눌러야 응답이 접수돼요.</p></div>${session.week===2?'<p class="student-draft-note">무드보드 그림은 PNG·JSON으로 따로 보관해 주세요. 여기에서는 주차 도구의 답변과 정리 결과를 제출해요.</p>':''}<p class="student-draft-note">작성 중인 내용은 이 탭에만 임시 보관돼요. 탭을 닫으면 지워져요.</p></form>`;
+    return `<div class="student-submit-title"><div><p class="eyebrow">마지막으로 · 응답 제출</p><h2 id="studentSubmitTitle">누구의 응답인가요?</h2><p>질문 작성을 마쳤다면 팀명과 이름을 적고 제출해요.</p></div><span class="student-week-badge">${session.week}주차</span></div><form id="studentSubmitForm"><div class="student-identity"><label for="studentTeam">팀명<input id="studentTeam" name="team" maxlength="80" required autocomplete="off" value="${esc(draft.team || '')}" placeholder="함께 활동하는 팀 이름"></label><label for="studentName">이름<input id="studentName" name="name" maxlength="80" required autocomplete="off" value="${esc(draft.name || '')}" placeholder="내 이름"></label></div><div id="studentSubmitMessage" class="student-message" role="alert" tabindex="-1" hidden></div><div class="student-submit-actions"><button class="button" type="submit">이번 주 응답 제출하기 →</button><p>팀명·이름과 작성한 답변이 프로그램 운영자에게 전달돼요.<br>위에서 복사하거나 파일을 저장한 뒤에도 제출 버튼을 눌러야 응답이 접수돼요.</p></div>${session.week===2?'<p class="student-draft-note">무드보드와 선택한 타이틀 이미지는 파일로 따로 보관해 주세요. 다음 3주차에는 무드보드 PNG를 첨부해 이미지 애셋을 만들어요. 여기에서는 주차 도구의 답변과 정리 결과를 제출해요.</p>':''}<p class="student-draft-note">작성 중인 내용은 이 탭에만 임시 보관돼요. 탭을 닫으면 지워져요.</p></form>`;
   }
   function renderSubmit() {
     const panel = document.getElementById('studentSubmit');
